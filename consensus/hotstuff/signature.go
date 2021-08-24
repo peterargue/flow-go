@@ -58,8 +58,7 @@ type SignatureAggregator interface {
 	// Aggregate assumes enough shares have been collected, it aggregates the signatures
 	// and return the aggregated signature.
 	// if called concurrently, only one thread will be running the aggregation.
-	// TODO: consider return (signerIDs and crypto.Signature)
-	Aggregate() ([]byte, error)
+	Aggregate() ([]flow.Identifier, crypto.Signature, error)
 }
 
 // CombinedSigAggregator aggregates the staking signatures and random beacon signatures,
@@ -84,7 +83,7 @@ type CombinedSigAggregator interface {
 	// Aggregate assumes enough shares have been collected, and aggregates the signatures.
 	// Note we don't mix the staking sig and random beacon sig when aggregating them,
 	// Instead, they are aggregated separately and returned separately.
-	Aggregate() (aggregatedStakingSig []byte, aggregatedRandomBeaconSig []byte, exception error)
+	Aggregate() (stakingSigners []flow.Identifier, aggregatedStakingSig crypto.Signature, randombeaconSigners []flow.Identifier, aggregatedRandomBeaconSig crypto.Signature, exception error)
 }
 
 // AggregatedSignatureData is an intermediate struct for Packer to pack the

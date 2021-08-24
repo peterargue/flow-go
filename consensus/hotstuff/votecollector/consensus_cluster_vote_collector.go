@@ -15,10 +15,12 @@ import (
 type ConsensusClusterVoteCollector struct {
 	CollectionBase
 
+	block         *model.Block
 	validator     *sigvalidator.ConsensusSigValidator
 	combinedAggr  hotstuff.CombinedSigAggregator
 	reconstructor hotstuff.RandomBeaconReconstructor
 	onQCCreated   hotstuff.OnQCCreated
+	packer        hotstuff.Packer
 	done          atomic.Bool
 }
 
@@ -90,20 +92,33 @@ func (c *ConsensusClusterVoteCollector) buildQC() (*flow.QuorumCertificate, erro
 
 	// at this point we can be sure that no one else is creating QC
 
-	_, _, err := c.combinedAggr.Aggregate()
+	stakingSigners, aggregatedStakingSig, beaconSigners, aggregatedBeaconSig, err := c.combinedAggr.Aggregate()
 	if err != nil {
 		return nil, fmt.Errorf("could not construct aggregated signatures: %w", err)
 	}
 
 	// reconstructor returns random beacon signature reconstructed from threshold signature shares
-	_, err = c.reconstructor.Reconstruct()
+	reconstructedBeaconSig, err = c.reconstructor.Reconstruct()
 	if err != nil {
 		return nil, fmt.Errorf("could not reconstruct random beacon signature: %w", err)
 	}
 
-	// TODO: use signatures to build qc
+	aggregatedSigData := &hotstuff.AggregatedSignatureData{
+		StakingSigners:               stakingSigners,
+		RandomBeaconSigners:          beaconSigners,
+		AggregatedStakingSig:         aggregatedStakingSig,
+		AggregatedRandomBeaconSig:    aggregatedRandomBeaconSig,
+		ReconstructedRandomBeaconSig: reconstructedBeaconSig,
+	}
 
-	panic("not implemented")
+	signerIDs, sigData := c.packer.Pack(aggregatedSigData)
+
+	return &flow.QuorumCertificate{
+		View:      c.block.View,
+		BlockID:   c.block.BlockID,
+		SignerIDs: signerIDs,
+		SigData:   sigData,
+	}
 }
 
 func (c *ConsensusClusterVoteCollector) hasSufficientStake() bool {
