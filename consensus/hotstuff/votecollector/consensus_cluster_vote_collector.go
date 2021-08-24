@@ -111,7 +111,7 @@ func (c *ConsensusClusterVoteCollector) buildQC() (*flow.QuorumCertificate, erro
 		ReconstructedRandomBeaconSig: reconstructedBeaconSig,
 	}
 
-	signerIDs, sigData := c.packer.Pack(aggregatedSigData)
+	signerIDs, sigData := c.packer.Pack(c.block.BlockID, aggregatedSigData)
 
 	return &flow.QuorumCertificate{
 		View:      c.block.View,
